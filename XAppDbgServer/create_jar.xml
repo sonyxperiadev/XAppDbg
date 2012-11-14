@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+  This ant script can be used to package the compiled framework classes
+  into a jar, which can be then added to the widget projects.
+
+  * Execute this script, which will generate a file called AdvWidgetFwk.jar
+  * Copy the jar file to the widget project's "libs/" folder
+
+  No extra steps are needed, since semc-build will automatically include
+  all jar files from the libs folder.
+-->
+<project default="main">
+
+    <target name="main" depends="compile,jar" />
+
+    <target name="compile">
+        <javac
+            srcdir="src"
+            destdir="bin"
+            fork="true"
+            source="1.5"
+            target="1.5"
+            debug="true">
+        </javac>
+    </target>
+
+    <target name="jar">
+        <jar
+            destfile="XAppDbgServer.jar"
+            basedir="bin"/>
+    </target>
+</project>
