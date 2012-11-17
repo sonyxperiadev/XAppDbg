@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="javadoc">
+    <target name="javadoc">
+        <javadoc access="protected" author="true" classpath="." destdir="doc" nodeprecated="false" nodeprecatedlist="false" noindex="false" nonavbar="false" notree="false" packagenames="com.sonymobile.tools.xappdbg,com.sonymobile.tools.xappdbg.trigger,com.sonymobile.tools.xappdbg.properties" source="1.6" sourcepath="src" splitindex="true" use="true" version="true"/>
+    </target>
+</project>
