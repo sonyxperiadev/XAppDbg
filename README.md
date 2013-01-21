@@ -15,11 +15,15 @@ Architecture
 |      Android device        |              |             PC             |
 |                            |              |                            |
 | +------------------------+ |              | +------------------------+ |
-| |     Application        | |              | |     XAppDbg-Client     | |
+| |     Application        | |              | |                        | |
 | |                        | |              | |                        | | 
-| | +--------------------+ | |              | |                        | |
-| | |                    | | |     TCP/IP   | |                        | |
-| | |  XAppDbg-Server  o------------------------o                      | |
+| | mField                 | |              | |  +------------------+  | |
+| |   ^                    | |              | |  | JTextField       |  | |
+| |   | (reflection)       | |              | |  +------------------+  | |
+| |   |                    | |              | |      ^                 | |
+| | +-|------------------+ | |              | |      |                 | |
+| | | v                  | | |     TCP/IP   | |      v                 | |
+| | | XAppDbg-Server   o------------------------o  XAppDbg-Client      | |
 | | |                    | | |              | |                        | |
 | | +--------------------+ | |              | |                        | |
 | +------------------------+ |              | +------------------------+ |
@@ -29,4 +33,34 @@ Architecture
 
 Example
 -------
+
+    // NOTE: not real constants yet, need to remove the final keyword now
+    static class Consts {
+        public static int RATE = 10;
+        public static float LIFE = 1.0f;
+        public static int MIN_COLOR = 0x804020;
+        public static int MAX_COLOR = 0xc08060;
+        public static float G = 9.6f;
+        public static float MIN_X = 0.0f;
+        public static float MAX_X = 1.0f;
+        public static float MIN_Y = 1.0f;
+        public static float MAX_Y = 1.0f;
+        public static float MIN_VX = -0.1f;
+        public static float MAX_VX = +0.1f;
+        public static float MIN_VY = -0.2f;
+        public static float MAX_VY = -0.3f;
+    }
+    
+    ...
+    
+    public void onCreate() {
+        super.onCreate();
+        ...
+        // Create and start the debug server
+        mServer = new XAppDbgServer();
+        mServer.addModule(new XAppDbgPropertiesModule(Consts.class));
+        mServer.start();
+        ...
+    }
+
 
