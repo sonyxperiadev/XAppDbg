@@ -63,4 +63,9 @@ Example
         ...
     }
 
+Links
+-----
 
+* Blog post: ...
+* XDA developers forum thread: ...
+* Javadoc: http://sonyxperiadev.github.com/XAppDbg/doc/index.html
