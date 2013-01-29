@@ -66,6 +66,6 @@ Example
 Links
 -----
 
-* Blog post: ...
-* XDA developers forum thread: ...
+* Blog post: http://developer.sonymobile.com/2013/01/29/debug-and-fine-tune-apps-with-the-open-sourced-xappdbg-tool-tool/
+* XDA developers forum thread: http://forum.xda-developers.com/showthread.php?p=37329350
 * Javadoc: http://sonyxperiadev.github.com/XAppDbg/doc/index.html
