@@ -1,11 +1,14 @@
 package com.sonymobile.xappdbg.client;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.EditText;
+import android.widget.Toast;
 
 public class XAppDbgClient extends Activity implements OnClickListener {
 
@@ -34,7 +37,22 @@ public class XAppDbgClient extends Activity implements OnClickListener {
 
     @Override
     public void onClick(View v) {
-        // TODO Auto-generated method stub
+        String host = mEditHost.getText().toString();
+        String port = mEditPort.getText().toString();
+        if (TextUtils.isEmpty(host)) {
+            Toast.makeText(this, "Host cannot be empty!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (TextUtils.isEmpty(port)) {
+            Toast.makeText(this, "Port cannot be empty!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Intent intent = new Intent(this, XAppDbgClientImpl.class);
+        intent.putExtra(XAppDbgClientImpl.EXTRA_HOST, host);
+        intent.putExtra(XAppDbgClientImpl.EXTRA_PORT, port);
+        startActivity(intent);
+
+        mPrefs.edit().putString(KEY_HOST, host).putString(KEY_PORT, port).apply();
     }
 
 }
