@@ -20,9 +20,14 @@ package com.sonymobile.tools.xappdbg;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Vector;
 
@@ -140,6 +145,23 @@ public class XAppDbgServer {
                 System.out.println("Error creating server socket, giving up!");
                 return; // give up
             }
+
+            // Just for debugging, list all network interfaces
+            System.out.println("Network interfaces:");
+            try {
+                for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
+                    NetworkInterface intf = en.nextElement();
+                    for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements();) {
+                        InetAddress inetAddress = enumIpAddr.nextElement();
+                        if (!inetAddress.isLoopbackAddress() && inetAddress instanceof Inet4Address) {
+                            System.out.println("  - " + inetAddress);
+                        }
+                    }
+                }
+            } catch (SocketException e) {
+                // ignore, this block is used only for debugging
+            }
+
             try {
                 while (mThread != null) {
                     System.out.println("Waiting for connection...");
