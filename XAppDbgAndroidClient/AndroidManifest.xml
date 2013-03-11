@@ -20,7 +20,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="XAppDbgClientImpl"
+            android:name="com.sonymobile.xappdbg.client.XAppDbgClientImpl"
             android:exported="false" />
     </application>
 

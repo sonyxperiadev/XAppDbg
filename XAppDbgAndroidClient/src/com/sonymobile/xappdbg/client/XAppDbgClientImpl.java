@@ -1,6 +1,8 @@
 package com.sonymobile.xappdbg.client;
 
+import com.sonymobile.tools.xappdbg.Packet;
 import com.sonymobile.tools.xappdbg.XAppDbgWidget;
+import com.sonymobile.tools.xappdbg.properties.Item;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -12,6 +14,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
 import android.util.Log;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import java.io.DataInputStream;
@@ -34,6 +37,7 @@ public class XAppDbgClientImpl extends Activity {
         CONNECTED,
         CONNECT_FAILED,
         DISCONNECTED,
+        CREATE_UI,
     };
 
     enum IOM {
@@ -54,10 +58,15 @@ public class XAppDbgClientImpl extends Activity {
     private DataInputStream mIs;
     private DataOutputStream mOs;
 
+    private FrameLayout mRoot;
+
     /** Called when the activity mIs first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        mRoot = new FrameLayout(this);
+        setContentView(mRoot);
 
         Intent intent = getIntent();
         mHost = intent.getStringExtra(EXTRA_HOST);
@@ -81,7 +90,7 @@ public class XAppDbgClientImpl extends Activity {
     @Override
     protected void onStop() {
         sendIO(IOM.DISCONENCT);
-        mIOThreadHandler.stop();
+        mIOThreadHandler.quit();
         super.onStop();
     }
 
@@ -93,12 +102,20 @@ public class XAppDbgClientImpl extends Activity {
         mIOThread.sendMessage(mIOThread.obtainMessage(msg.ordinal(), arg1, arg2, obj));
     }
 
+    public void postIO(Runnable r) {
+        mIOThread.post(r);
+    }
+
     private void sendMain(MM msg) {
         mMainThread.sendEmptyMessage(msg.ordinal());
     }
 
     private void sendMain(MM msg, Object obj, int arg1, int arg2) {
         mMainThread.sendMessage(mMainThread.obtainMessage(msg.ordinal(), arg1, arg2, obj));
+    }
+
+    public void postMain(Runnable r) {
+        mMainThread.post(r);
     }
 
     @MainThread
@@ -166,10 +183,7 @@ public class XAppDbgClientImpl extends Activity {
                 /* String cmdName = */ mIs.readUTF();
             }
 
-            System.out.println("# Building UI");
-            for (XAppDbgWidget w : widgets) {
-                createWidget(w);
-            }
+            sendMain(MM.CREATE_UI, widgets, 0, 0);
 
             Log.v(TAG, "Server IO Loop started");
             return true;
@@ -179,14 +193,22 @@ public class XAppDbgClientImpl extends Activity {
         }
     }
 
-    @IOThread
+    @MainThread
+    public void createUi(Vector<XAppDbgWidget> widgets) {
+        System.out.println("# Building UI");
+        for (XAppDbgWidget w : widgets) {
+            createWidget(w);
+        }
+    }
+
+    @MainThread
     private void createWidget(XAppDbgWidget w) {
         // TODO
-//        XAppDbgWidgetView widgetView = XAppDbgWidgetView.create(w, mConn);
-//        if (widgetView != null) {
-//            // FIXME: non-inline widgets are not supported yet
-//            widgetView.createUI();
-//        }
+        XAppDbgWidgetView widgetView = XAppDbgWidgetView.create(w, this);
+        if (widgetView != null) {
+            // FIXME: non-inline widgets are not supported yet
+            widgetView.createUI(this, mRoot);
+        }
     }
 
     @IOThread
@@ -218,16 +240,24 @@ public class XAppDbgClientImpl extends Activity {
 
     class MainThreadReceiver implements Handler.Callback {
 
+        @SuppressWarnings("unchecked")
         @Override
         public boolean handleMessage(Message msg) {
             MM m = MM.values()[msg.what];
             Log.v(TAG, "MainThread: " + m);
             switch (m) {
-            case CONNECTED:
-                onConnected();
-                return true;
-            case CONNECT_FAILED:
-                onConnectionFailed();
+                case CONNECTED:
+                    onConnected();
+                    return true;
+                case CONNECT_FAILED:
+                    onConnectionFailed();
+                    return true;
+                case DISCONNECTED:
+                    // NOP
+                    return true;
+                case CREATE_UI:
+                    createUi((Vector<XAppDbgWidget>) msg.obj);
+                    return true;
             }
             return false;
         }
@@ -241,17 +271,85 @@ public class XAppDbgClientImpl extends Activity {
             IOM m = IOM.values()[msg.what];
             Log.v(TAG, "IOThread: " + m);
             switch (m) {
-            case CONNECT:
-                doConnect((String) msg.obj, msg.arg1);
-                return true;
-            case DISCONENCT:
-                close();
-                sendMain(MM.DISCONNECTED);
-                break;
+                case CONNECT:
+                    doConnect((String) msg.obj, msg.arg1);
+                    return true;
+                case DISCONENCT:
+                    close();
+                    sendMain(MM.DISCONNECTED);
+                    break;
             }
             return false;
         }
 
+    }
+
+    public Packet createPacket(int channel) {
+        return new Packet(channel, mIs, mOs);
+    }
+
+    public void sendFloatValueToServer(final Item item, final float value, final int channel) {
+        mIOThread.post(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    item.sendFloatValueToServer(value, createPacket(channel));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    public void readFloatValue(final Item item, final int channel, final OnValueRead cb) {
+        mIOThread.post(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    final float val = item.readFloatValue(createPacket(channel));
+                    mMainThread.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            cb.onValueRead(val);
+                        }
+                    });
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    public void sendIntValueToServer(final Item item, final int value, final int channel) {
+        mIOThread.post(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    item.sendIntValueToServer(value, createPacket(channel));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    public void readIntValue(final Item item, final int channel, final OnValueRead cb) {
+        mIOThread.post(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    final int val = item.readIntValue(createPacket(channel));
+                    mMainThread.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            cb.onValueRead(val);
+                        }
+                    });
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
 }
